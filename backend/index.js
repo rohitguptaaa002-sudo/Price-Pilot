@@ -4,7 +4,7 @@ console.log("ENV =", process.env.MONGODB_URI);
 const connectDB = require("./config/db");
 const cors = require("cors");
 const express = require("express");
-const Product = require("./models/Product");
+const Product = require("./models/product");
 const checkStock = require("./services/checkStock");
 require("./cron");
 const authRoutes = require("./routes/authRoutes");
