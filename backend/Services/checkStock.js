@@ -36,8 +36,7 @@ await page.setJavaScriptEnabled(false);
 
     console.log("6. Page loaded");
     console.log(await page.title());
-
-    await page.waitTimeout(3000);
+await new Promise(resolve => setTimeout(resolve, 3000));
     console.log("7. Body Loaded");
     
     await new Promise((resolve) => setTimeout(resolve, 3000));
