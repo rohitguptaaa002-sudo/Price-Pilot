@@ -68,7 +68,7 @@ if (hostname.includes("amazon")) {
   console.log("Amazon body loaded");
 }
 
-await new Promise(resolve => setTimeout(resolve, 3000));
+await new Promise(resolve => setTimeout(resolve, 5000));
     if (product.name === "Iphone 17 256") {
       await page.screenshot({
         path: "unicorn.png",
@@ -78,8 +78,7 @@ await new Promise(resolve => setTimeout(resolve, 3000));
 
     console.log(`Checking: ${product.name}`);
 
-    const lowerHtml = html.toLowerCase();
-    let price = product.price;
+let price = product.price;
 
 try {
   if (hostname.includes("flipkart")) {
