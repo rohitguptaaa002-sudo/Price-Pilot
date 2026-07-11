@@ -28,21 +28,33 @@ const checkStock = async (product) => {
     console.log("5. Before page.goto:", product.url);
     page.setDefaultNavigationTimeout(30000);
 console.log("opening", product.url);
-await page.setJavaScriptEnabled(false);
-    await page.goto(product.url, {
-      waitUntil: "domcontentloaded",
-      timeout: 60000,
-    });
+
+   await Promise.race([
+  page.goto(product.url, {
+    waitUntil: "domcontentloaded",
+    timeout: 30000,
+  }),
+  new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Timeout")), 30000)
+  )
+]);
 
     console.log("6. Page loaded");
     console.log(await page.title());
 await new Promise(resolve => setTimeout(resolve, 3000));
     console.log("7. Body Loaded");
-    
-    await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    const hostname = new URL(product.url).hostname;
+   const hostname = new URL(product.url).hostname;
 
+console.log("Hostname:", hostname);
+
+if (hostname.includes("amazon")) {
+  console.log("Amazon detected");
+  await page.waitForSelector("body", { timeout: 10000 });
+  console.log("Amazon body loaded");
+}
+
+await new Promise(resolve => setTimeout(resolve, 3000));
     if (product.name === "Iphone 17 256") {
       await page.screenshot({
         path: "unicorn.png",
