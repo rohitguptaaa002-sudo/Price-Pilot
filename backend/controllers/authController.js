@@ -2,7 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const generateOTP = require("../utils/generateOTP");
-const sendOTPEmail = require("../services/sendOTPEmail");
+const sendOTPEmail = require("../Services/sendOTPEmail");
 
 // SIGNUP
 const signup = async (req, res) => {
