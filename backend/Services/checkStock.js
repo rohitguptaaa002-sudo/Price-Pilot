@@ -34,15 +34,12 @@ browser = await puppeteer.launch({
     page.setDefaultNavigationTimeout(30000);
 console.log("opening", product.url);
 
-   await Promise.race([
-  page.goto(product.url, {
-    waitUntil: "domcontentloaded",
-    timeout: 30000,
-  }),
-  new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("Timeout")), 30000)
-  )
-]);
+await page.goto(product.url, {
+  waitUntil: "load",
+  timeout: 15000,
+}).catch(e => console.log("Goto Error:", e.message));
+
+console.log("After goto");
 
     console.log("6. Page loaded");
     console.log(await page.title());
