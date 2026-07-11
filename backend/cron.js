@@ -1,6 +1,6 @@
 const cron = require("node-cron");
 const Product = require("./models/product");
-const checkStock = require("./services/checkStock");
+const checkStock = require("./Services/checkStock");
 const sendEmail = require("./services/sendEmail");
 const Pincode = require("./models/Pincode");
 

@@ -5,7 +5,7 @@ const connectDB = require("./config/db");
 const cors = require("cors");
 const express = require("express");
 const Product = require("./models/product");
-const checkStock = require("./services/checkStock");
+const checkStock = require("./Services/checkStock");
 require("./cron");
 const authRoutes = require("./routes/authRoutes");
 const authMiddleware = require("./middleware/authMiddleware");
