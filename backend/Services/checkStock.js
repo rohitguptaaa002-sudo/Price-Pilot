@@ -27,9 +27,9 @@ const checkStock = async (product) => {
 
     console.log("5. Before page.goto:", product.url);
     page.setDefaultNavigationTimeout(30000);
-
+console.log("opening", product.url);
     await page.goto(product.url, {
-      timeout: 15000,
+      timeout: 60000,
     });
 
     console.log("6. Page loaded");
