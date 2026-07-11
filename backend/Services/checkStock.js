@@ -9,15 +9,6 @@ const checkStock = async (product) => {
 
     console.log("2. Before browser launch");
 
-const executablePath = await chromium.executablePath();
-console.log("Executable:", executablePath);
-
-browser = await puppeteer.launch({
-  executablePath,
-  args: chromium.args,
-  headless: true,
-});
-
 browser = await puppeteer.launch({
   executablePath: await chromium.executablePath(),
   args: [
@@ -25,7 +16,7 @@ browser = await puppeteer.launch({
     "--no-sandbox",
     "--disable-setuid-sandbox"
   ],
-  headless: "new",
+  headless: true,
 });
     console.log("3. Browser launched");
 
@@ -42,8 +33,8 @@ browser = await puppeteer.launch({
 console.log("opening", product.url);
 
 await page.goto(product.url, {
-  waitUntil: "load",
-  timeout: 15000,
+  waitUntil: "domcontentloaded",
+  timeout: 45000,
 }).catch(e => console.log("Goto Error:", e.message));
 
 console.log("After goto");
@@ -56,22 +47,14 @@ await new Promise(resolve => setTimeout(resolve, 3000));
    const hostname = new URL(product.url).hostname;
 
 console.log("Hostname:", hostname);
-console.log("A");
 const title = await page.title();
-console.log("B");
 
 const lowerHtml = await page.evaluate(() =>
   document.body.innerText.toLowerCase()
 );
 
-console.log("C");
-console.log("D");
 
 console.log(`Checking: ${product.name}`);
-
-console.log("E");
-
-console.log("F");
 
 if (hostname.includes("amazon")) {
   console.log("Amazon detected");
@@ -79,7 +62,7 @@ if (hostname.includes("amazon")) {
   console.log("Amazon body loaded");
 }
 
-await new Promise(resolve => setTimeout(resolve, 5000));
+await new Promise(resolve => setTimeout(resolve, 2000));
     if (product.name === "Iphone 17 256") {
       await page.screenshot({
         path: "unicorn.png",
@@ -92,36 +75,32 @@ await new Promise(resolve => setTimeout(resolve, 5000));
 let price = product.price;
 
 try {
-  console.log('G');
   if (hostname.includes("flipkart")) {
-    console.log("H");
+
     console.log("Before Flipkart $$eval");
- const prices = await page.$$eval(
-  console.log("I"),
+
+const txt = await page.$eval(
   "div.v1zwn21l.v1zwn20._1psv1zeb9._1psv1ze0",
-  els => els.map(el => el.innerText.trim())
-);
-console.log("After Flipkart $$eval");
+  el => el.innerText.trim()
+).catch(() => null);
 
-console.log("Prices:", prices);
-
-const txt = prices[0];
+console.log("Price Text:", txt);
 
 if (txt) {
   price = Number(txt.replace(/[₹,]/g, ""));
 }
 
 console.log("Flipkart Price:", price);
-}
+  }
 
   else if (hostname.includes("amazon")) {
     const whole = await page.$eval(
-      ".a-price-whole",
+  ".a-price .a-offscreen",
       el => el.innerText
     ).catch(() => null);
 
     if (whole) {
-      price = Number(whole.replace(/[^\d]/g, ""));
+      price = Number(whole.replace(/[₹,]/g, ""));
     }
   }
 
