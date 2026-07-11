@@ -9,7 +9,14 @@ const checkStock = async (product) => {
 
     console.log("2. Before browser launch");
 
-    console.log("Executable:", await chromium.executablePath());
+const executablePath = await chromium.executablePath();
+console.log("Executable:", executablePath);
+
+browser = await puppeteer.launch({
+  executablePath,
+  args: chromium.args,
+  headless: true,
+});
 
 browser = await puppeteer.launch({
   executablePath: await chromium.executablePath(),
