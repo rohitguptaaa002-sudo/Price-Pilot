@@ -52,6 +52,12 @@ await new Promise(resolve => setTimeout(resolve, 3000));
    const hostname = new URL(product.url).hostname;
 
 console.log("Hostname:", hostname);
+console.log("A");
+const title = await page.title();
+console.log("B");
+
+const html = await page.content();
+console.log("C");
 
 if (hostname.includes("amazon")) {
   console.log("Amazon detected");
@@ -69,18 +75,17 @@ await new Promise(resolve => setTimeout(resolve, 3000));
 
     console.log(`Checking: ${product.name}`);
 
-    const title = await page.title();
-    const html = await page.content();
-
     const lowerHtml = html.toLowerCase();
     let price = product.price;
 
 try {
   if (hostname.includes("flipkart")) {
+    console.log("Before Flipkart $$eval");
  const prices = await page.$$eval(
   "div.v1zwn21l.v1zwn20._1psv1zeb9._1psv1ze0",
   els => els.map(el => el.innerText.trim())
 );
+console.log("After Flipkart $$eval");
 
 console.log("Prices:", prices);
 
