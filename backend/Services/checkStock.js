@@ -26,15 +26,18 @@ const checkStock = async (product) => {
     );
 
     console.log("5. Before page.goto:", product.url);
+    page.setDefaultNavigationTimeout(30000);
 
     await page.goto(product.url, {
-      waitUntil: "networkidle2",
-      timeout: 60000,
+      waitUntil: "domcontentloaded",
+      timeout: 15000,
     });
 
     console.log("6. Page loaded");
+    console.log(await page.title());
 
-    await page.waitForSelector("body");
+    await page.waitTimeout(3000);
+    console.log("7. Body Loaded");
     
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
