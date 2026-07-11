@@ -56,7 +56,10 @@ console.log("A");
 const title = await page.title();
 console.log("B");
 
-const html = await page.content();
+const lowerHtml = await page.evaluate(() =>
+  document.body.innerText.toLowerCase()
+);
+
 console.log("C");
 
 if (hostname.includes("amazon")) {
