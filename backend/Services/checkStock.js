@@ -1,18 +1,13 @@
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
 const checkStock = async (product) => {
   let browser;
 
   try {
     browser = await puppeteer.launch({
-  headless: "new",
-  args: [
-    "--no-sandbox",
-    "--disable-setuid-sandbox",
-    "--disable-dev-shm-usage",
-    "--disable-gpu",
-    "--no-zygote",
-    "--single-process",
-  ],
+  executablePath: await chromium.executablePath(),
+  args: chromium.args,
+  headless: chromium.headless,
 });
 
     const page = await browser.newPage();
