@@ -1,7 +1,7 @@
 const cron = require("node-cron");
 const Product = require("./models/product");
 const checkStock = require("./Services/checkStock");
-const sendEmail = require("./services/sendEmail");
+const sendEmail = require("./Services/sendEmail");
 const Pincode = require("./models/Pincode");
 
 cron.schedule("*2 * * * *", async () => {
