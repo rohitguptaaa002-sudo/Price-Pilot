@@ -4,8 +4,16 @@ const checkStock = async (product) => {
 
   try {
     browser = await puppeteer.launch({
-      headless: true,
-    });
+  headless: "new",
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--no-zygote",
+    "--single-process",
+  ],
+});
 
     const page = await browser.newPage();
     
