@@ -9,12 +9,17 @@ const checkStock = async (product) => {
 
     console.log("2. Before browser launch");
 
-    browser = await puppeteer.launch({
-      executablePath: await chromium.executablePath(),
-      args: chromium.args,
-      headless: true,
-    });
+    console.log("Executable:", await chromium.executablePath());
 
+browser = await puppeteer.launch({
+  executablePath: await chromium.executablePath(),
+  args: [
+    ...chromium.args,
+    "--no-sandbox",
+    "--disable-setuid-sandbox"
+  ],
+  headless: "new",
+});
     console.log("3. Browser launched");
 
     const page = await browser.newPage();
