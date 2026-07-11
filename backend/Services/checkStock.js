@@ -1,25 +1,38 @@
 const puppeteer = require("puppeteer-core");
 const chromium = require("@sparticuz/chromium");
+
 const checkStock = async (product) => {
   let browser;
 
   try {
+    console.log("1. Starting checkStock");
+
+    console.log("2. Before browser launch");
+
     browser = await puppeteer.launch({
-  executablePath: await chromium.executablePath(),
-  args: chromium.args,
-  headless: true,
-});
+      executablePath: await chromium.executablePath(),
+      args: chromium.args,
+      headless: true,
+    });
+
+    console.log("3. Browser launched");
 
     const page = await browser.newPage();
-    
+
+    console.log("4. New page created");
+
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/137.0.0.0 Safari/537.36"
     );
+
+    console.log("5. Before page.goto:", product.url);
 
     await page.goto(product.url, {
       waitUntil: "networkidle2",
       timeout: 60000,
     });
+
+    console.log("6. Page loaded");
 
     await page.waitForSelector("body");
     
