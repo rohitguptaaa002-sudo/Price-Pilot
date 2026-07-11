@@ -14,7 +14,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@sparticuz/chromium": "^149.0.0",
+    "@sparticuz/chromium": "^138.0.2",
     "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
