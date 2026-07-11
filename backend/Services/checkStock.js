@@ -29,7 +29,7 @@ const checkStock = async (product) => {
     page.setDefaultNavigationTimeout(30000);
 
     await page.goto(product.url, {
-      waitUntil: "commmit",
+      waitUntil: "domcontentloaded",
       timeout: 15000,
     });
 
