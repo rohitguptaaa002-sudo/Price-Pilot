@@ -71,8 +71,6 @@ console.log(`Checking: ${product.name}`);
 
 console.log("E");
 
-let price = product.price;
-
 console.log("F");
 
 if (hostname.includes("amazon")) {
@@ -99,7 +97,7 @@ try {
     console.log("H");
     console.log("Before Flipkart $$eval");
  const prices = await page.$$eval(
-  console.log("I")
+  console.log("I"),
   "div.v1zwn21l.v1zwn20._1psv1zeb9._1psv1ze0",
   els => els.map(el => el.innerText.trim())
 );
