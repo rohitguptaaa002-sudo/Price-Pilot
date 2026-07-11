@@ -30,6 +30,7 @@ const checkStock = async (product) => {
 console.log("opening", product.url);
 await page.setJavaScriptEnabled(false);
     await page.goto(product.url, {
+      waitUntil: "domcontentloaded",
       timeout: 60000,
     });
 
