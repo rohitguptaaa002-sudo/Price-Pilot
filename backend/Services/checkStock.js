@@ -65,6 +65,15 @@ const lowerHtml = await page.evaluate(() =>
 );
 
 console.log("C");
+console.log("D");
+
+console.log(`Checking: ${product.name}`);
+
+console.log("E");
+
+let price = product.price;
+
+console.log("F");
 
 if (hostname.includes("amazon")) {
   console.log("Amazon detected");
@@ -85,9 +94,12 @@ await new Promise(resolve => setTimeout(resolve, 5000));
 let price = product.price;
 
 try {
+  console.log('G');
   if (hostname.includes("flipkart")) {
+    console.log("H");
     console.log("Before Flipkart $$eval");
  const prices = await page.$$eval(
+  console.log("I")
   "div.v1zwn21l.v1zwn20._1psv1zeb9._1psv1ze0",
   els => els.map(el => el.innerText.trim())
 );
