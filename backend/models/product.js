@@ -40,6 +40,10 @@ const productSchema = new mongoose.Schema(
     status: {
       type: String, default: 'Ready to Hunt'
     },
+    lastAppleQuote: {
+      type: String,
+      default: null,
+    },
 
     user: {
   type: require("mongoose").Schema.Types.ObjectId,

@@ -145,11 +145,7 @@ app.put("/products/:id/lost-signal", authMiddleware, async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
-
-// ==========================================================================
 // PINCODE MANAGEMENT ROUTES
-// ==========================================================================
-
 // Add Pincode
 app.post("/pincodes", authMiddleware, async (req, res) => {
   try {
@@ -219,7 +215,8 @@ app.post("/api/products/check-stock", async (req, res) => {
       let updateData = {
         inStock: result.inStock,
         price: cleanPrice,
-        status: result.inStock ? "Ready to Hunt" : "Out of Stock"
+        status: result.inStock ? "Ready to Hunt" : "Out of Stock",
+        lastAppleQuote: result.lastAppleQuote ?? product.lastAppleQuote,
       };
 
       // 3. Flipkart Logic

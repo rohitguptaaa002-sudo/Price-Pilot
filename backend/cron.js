@@ -1,20 +1,20 @@
 const cron = require("node-cron");
 const Product = require("./models/product");
 const checkStock = require("./Services/checkStock");
-const sendEmail = require("./Services/sendEmail");
+const sendTelegram = require("./Services/sendTelegram");
 const Pincode = require("./models/Pincode");
 
-cron.schedule("*5 * * * *", async () => {
+cron.schedule("*/5 * * * *", async () => {
   console.log("🔄 Running stock check...");
 
   try {
     const products = await Product.find();
 
     for (const product of products) {
-      // User ke saare pincodes nikal kar pass karenge
+      
       const pincodesDocs = await Pincode.find({ user: product.user });
     
-      // Browser ab stock ke saath-saath pincodes bhi evaluate karega
+      
       const result = await checkStock(product, pincodesDocs);
 
       // 🚨 FLIPKART RESTRICTED LOGISTICS ALERT TRIGGER
@@ -24,61 +24,58 @@ cron.schedule("*5 * * * *", async () => {
         result.availablePincodes?.length > 0 && 
         result.unavailablePincodes?.length > 0
       ) {
-        await sendEmail(
-          process.env.EMAIL_USER,
-          "🚨 Flipkart Restricted Stock Alert!",
-          `
-          <div style="font-family:Arial,sans-serif; padding:20px; background:#0f172a; color:#f1f5f9; border-radius:10px;">
-            <h2 style="color:#38bdf8; margin-top:0;">Target Stock Detected but Region-Restricted!</h2>
-            <p><b>Product:</b> ${product.name}</p>
-            <p><b>Price:</b> ₹${result.price || product.price}</p>
-            <hr style="border-color:rgba(255,255,255,0.08);"/>
-            <h3 style="color:#4ade80;">🟢 Available on these Pincodes:</h3>
-            <p style="font-family:monospace; background:rgba(255,255,255,0.05); padding:10px; border-radius:5px;">${result.availablePincodes.join(", ")}</p>
-            <h3 style="color:#f87171;">❌ Delivery Blocked on these Pincodes:</h3>
-            <p style="font-family:monospace; background:rgba(255,255,255,0.05); padding:10px; border-radius:5px;">${result.unavailablePincodes.join(", ")}</p>
-            <br>
-            <a href="${product.url}" target="_blank" style="background:#38bdf8; color:#0f172a; padding:12px 25px; text-decoration:none; border-radius:6px; font-weight:bold; display:inline-block;">🛒 Open Flipkart Link</a>
-          </div>
-          `
+        await sendTelegram(
+          `🚨 <b>Flipkart Restricted Stock Alert!</b>\n\n` +
+          `<b>Product:</b> ${product.name}\n` +
+          `<b>Price:</b> ₹${result.price || product.price}\n\n` +
+          `🟢 <b>Available on:</b>\n<code>${result.availablePincodes.join(", ")}</code>\n\n` +
+          `❌ <b>Blocked on:</b>\n<code>${result.unavailablePincodes.join(", ")}</code>\n\n` +
+          `🛒 <a href="${product.url}">Open Flipkart Link</a>`
         );
-        console.log(`✉️ Pincode specific email dispatched for: ${product.name}`);
+        console.log(`✉️ Telegram alert sent (restricted pincodes) for: ${product.name}`);
       }
 
       // 💰 Price Change Alert
       if (product.price && result.price && product.price !== result.price) {
-        await sendEmail(
-          process.env.EMAIL_USER,
-          "💰 Price Changed!",
-          `
-          <div style="font-family:Arial,sans-serif;padding:20px">
-            <h2>💰 Price Changed!</h2>
-            <h3>${product.name}</h3>
-            <p><b>Old Price:</b> <del>₹${product.price}</del></p>
-            <p><b>New Price:</b> <span style="color:green;font-size:20px;">₹${result.price}</span></p>
-            <br>
-            <a href="${product.url}" style="background:#2874F0;color:white;padding:12px 25px;text-decoration:none;border-radius:6px;font-weight:bold;">🛒 Buy Now</a>
-          </div>
-          `
+        await sendTelegram(
+          `💰 <b>Price Changed!</b>\n\n` +
+          `<b>${product.name}</b>\n` +
+          `Store: <b>${product.store}</b>\n` +
+          `Old Price: <s>₹${product.price}</s>\n` +
+          `New Price: <b>₹${result.price}</b>\n\n` +
+          `🛒 <a href="${product.url}">Buy Now</a>`
         );
         console.log("💰 Price Changed");
       }
 
       // 🎉 Back In Stock Alert
       if (!product.inStock && result.inStock) {
-        await sendEmail(
-          process.env.EMAIL_USER,
-          "🎉 Product Back In Stock!",
-          `
-          <div style="font-family:Arial,sans-serif;padding:20px">
-            <h2>🎉 Product Back In Stock!</h2>
-            <h3>${product.name}</h3>
-            <p><b>Current Price:</b> ₹${result.price}</p>
-            <br>
-            <a href="${product.url}" style="background:#2874F0;color:white;padding:12px 25px;text-decoration:none;border-radius:6px;font-weight:bold;">🛒 Buy Now</a>
-          </div>
-          `
-        );
+        const isApple = product.url && product.url.toLowerCase().includes("apple.com");
+
+        if (isApple && result.storeDetails?.length > 0) {
+          // 🍏 Rich Apple-specific alert: pincode, per-store availability, part number
+          const storeLines = result.storeDetails
+            .map((s) => `🏪 <b>${s.storeName}</b>, ${s.city}${s.storeNumber ? ` (${s.storeNumber})` : ""}\n   ${s.quote}`)
+            .join("\n\n");
+
+          await sendTelegram(
+            `🚨 <b>APPLE STOCK ALERT</b> 🚨\n` +
+            `📦 <b>${product.name}</b>\n\n` +
+            `📍 Pincode: <b>${result.pincodeUsed || "-"}</b>\n\n` +
+            `${storeLines}\n\n` +
+            (result.partNumber ? `🔢 Part #: <code>${result.partNumber}</code>\n\n` : "") +
+            `🔗 <a href="${product.url}">Buy Now</a>`
+          );
+          console.log(`🍏 Apple stock alert sent for: ${product.name}`);
+        } else {
+          await sendTelegram(
+            `🎉 <b>Product Back In Stock!</b>\n\n` +
+            `<b>${product.name}</b>\n` +
+            `Store: <b>${product.store}</b>\n` +
+            `Current Price: ₹${result.price}\n\n` +
+            `🛒 <a href="${product.url}">Buy Now</a>`
+          );
+        }
       }
 
       // Save everything cleanly to database

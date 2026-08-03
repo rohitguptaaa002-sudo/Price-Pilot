@@ -270,6 +270,45 @@ const resendOTP = async (req, res) => {
   }
 };
 
+const updateTelegramChatId = async (req, res) => {
+  try {
+    const { telegramChatId } = req.body;
+
+    if (!telegramChatId) {
+      return res.status(400).json({
+        success: false,
+        message: "Telegram Chat ID is required",
+      });
+    }
+
+    const userId = req.user.id;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { telegramChatId },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Telegram Chat ID saved successfully",
+      telegramChatId: user.telegramChatId,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   signup,
   login,
@@ -277,4 +316,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   resendOTP,
+  updateTelegramChatId,
 };

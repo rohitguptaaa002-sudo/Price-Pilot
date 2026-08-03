@@ -62,7 +62,7 @@ function Login() {
   backdrop: "rgba(0,0,0,.65)"
 });
 
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       Swal.fire({
         icon: "error",

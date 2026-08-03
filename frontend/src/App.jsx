@@ -10,7 +10,7 @@ function App(){
   const [store, setStore] = useState("");
   const [filter, setFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 6;
+  const productsPerPage = 5;
   const [price, setPrice] = useState("");
   const [url, setUrl] = useState("");
   const [products, setProducts] = useState([]);
@@ -188,6 +188,7 @@ Swal.fire({
       <p style="color:#cbd5e1;font-size:17px;">
         Your price alerts will be waiting for you 💜
       </p>
+    </div>
   `,
   background:"#0f172a",
   showConfirmButton:false,
@@ -228,6 +229,13 @@ const res = await axios.get(`${API_URL}/products`, {
 
   return () => clearInterval(interval);
 }, []);
+
+  // Reset to page 1 whenever filter/search/sort changes — otherwise you
+  // could be stuck on page 3 while the new filtered list only has 1 page.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, search, sort]);
+
   const addProduct = async () => {
        if (!name || !store || !price)
      {
@@ -357,6 +365,35 @@ const res = await axios.post(
     behavior: "smooth",
   });
 };
+
+  // NEW: toggleStock was called from the "Signal Found / Lost Signal" button
+  // but was never defined anywhere — clicking it crashed the app with
+  // "toggleStock is not defined". Added it here, following the same
+  // axios + token + showSuccess/showError pattern used elsewhere.
+  const toggleStock = async (product) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.put(
+        `${API_URL}/products/${product._id}`,
+        {
+          inStock: !product.inStock,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      showSuccess(res.data.message || "Stock status updated");
+      getProducts();
+    } catch (error) {
+      console.log(error);
+      showError("Error updating stock status");
+    }
+  };
+
  const updateProduct = async () => {
   if (!name.trim() || !store.trim() || !price) {
     alert("Please fill all required fields");
@@ -584,7 +621,7 @@ const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
 
 
         {/* 📦 ULTRA-SLEEK PRODUCT CARD REPLACEMENT */}
-{filteredProducts.map((product) => (
+{currentProducts.map((product) => (
   <div key={product._id} className="product-radar-card p-4 mb-3">
     <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
       <div>

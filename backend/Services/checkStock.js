@@ -1,22 +1,26 @@
-const puppeteer = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
+const puppeteer = require("puppeteer");
+//const chromium = require("@sparticuz/chromium");
+// old const checkAppleStore = require("./checkApplestore");
+const checkAppleAvailability = require("./checkAppleAvailability");
+const Pincode = require("../models/Pincode");
+
+// Default pincode + stores used ONLY for Apple availability checks.
+// Change these to whichever PIN code / stores you want to monitor.
+//const APPLE_PINCODE = "110017";
+//const APPLE_STORE_NAMES = ["Apple Saket", "Apple Noida"];
 
 const checkStock = async (product) => {
   let browser;
 
   try {
+    let inStock = true;
     console.log("1. Starting checkStock");
 
     console.log("2. Before browser launch");
 
 browser = await puppeteer.launch({
-  executablePath: await chromium.executablePath(),
-  args: [
-    ...chromium.args,
-    "--no-sandbox",
-    "--disable-setuid-sandbox"
-  ],
   headless: true,
+  args: ["--no-sandbox", "--disable-setuid-sandbox"],
 });
     console.log("3. Browser launched");
 
@@ -93,14 +97,57 @@ if (txt) {
 console.log("Flipkart Price:", price);
   }
 
-  else if (hostname.includes("amazon")) {
-    const whole = await page.$eval(
-  ".a-price .a-offscreen",
-      el => el.innerText
-    ).catch(() => null);
+ else if (hostname.includes("amazon")) {
+    // JSON-LD (schema.org Product data) Amazon khud embed karta hai — ye
+    // hamesha SAHI product ka price deta hai, kabhi sponsored/related item
+    // ka nahi. Isliye pehle isi ko try karo, phir DOM selectors fallback me.
+    const jsonLdPrice = await page.evaluate(() => {
+      const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+      for (const script of scripts) {
+        try {
+          const data = JSON.parse(script.textContent);
+          const items = Array.isArray(data) ? data : [data];
+          for (const item of items) {
+            if (item.offers) {
+              const offer = Array.isArray(item.offers) ? item.offers[0] : item.offers;
+              if (offer && offer.price) return Number(offer.price);
+            }
+          }
+        } catch (e) {}
+      }
+      return null;
+    });
 
-    if (whole) {
-      price = Number(whole.replace(/[₹,]/g, ""));
+    console.log("Amazon JSON-LD Price:", jsonLdPrice);
+
+    if (jsonLdPrice && jsonLdPrice > 100) {
+      price = jsonLdPrice;
+    } else {
+      
+      const amazonPriceSelectors = [
+        "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
+        "#corePrice_feature_div .a-price .a-offscreen",
+        "#apex_desktop .a-price .a-offscreen",
+        "#priceblock_ourprice",
+        "#priceblock_dealprice",
+        ".a-price .a-offscreen",
+      ];
+
+      const whole = await page.evaluate((selectors) => {
+        for (const sel of selectors) {
+          const el = document.querySelector(sel);
+          if (el && el.innerText && el.innerText.trim()) {
+            return el.innerText.trim();
+          }
+        }
+        return null;
+      }, amazonPriceSelectors);
+
+      console.log("Amazon Price Text (fallback):", whole);
+
+      if (whole) {
+        price = Number(whole.replace(/[₹,]/g, ""));
+      }
     }
   }
 
@@ -136,6 +183,43 @@ console.log("Unicorn Price:", price);
   console.log(e);
   console.log("Price Fetch Failed");
 }
+  /*let appleResult = null;
+  if (hostname.includes("apple.in") || hostname.includes("apple.com")) {
+    console.log("Apple Store detected");
+    try {
+      // Pass pincode + target stores so we get real per-store availability
+      // (e.g. Apple Saket / Apple Noida) instead of a generic yes/no.
+      appleResult = await checkAppleStore({
+        url: product.url,
+        pincode: APPLE_PINCODE,
+        storeNames: APPLE_STORE_NAMES,
+      });
+      inStock = appleResult.inStock;
+      if (appleResult.price) {
+        price = appleResult.price;
+      }
+      console.log("Apple Store Result:", appleResult);
+    } catch (err) {
+      console.log("Apple Check Error inside stock script:", err.message);
+    }
+  }
+  */
+ let appleResult = null;
+if (hostname.includes("apple.in") || hostname.includes("apple.com")) {
+  console.log("Apple Store detected");
+  try {
+    // User ne jo bhi pincodes save kiye hain unn SABKE liye check karta hai
+    appleResult = await checkAppleAvailability(product);
+    inStock = appleResult.inStock;
+    if (appleResult.price) {
+      price = appleResult.price;
+    }
+    console.log("Apple Store Result:", appleResult);
+  } catch (err) {
+    console.log("Apple Check Error inside stock script:", err.message);
+  }
+  await new Promise((r) => setTimeout(r, 15000));
+}
 
     console.log("Website:", hostname);
     console.log("Page Title:", title);
@@ -160,7 +244,7 @@ console.log("Unicorn Price:", price);
       );
     }
 
-    let inStock = true;
+    //let inStock = true;
 
     if (
       lowerHtml.includes("notify me") ||
@@ -211,7 +295,9 @@ console.log("Unicorn Price:", price);
   console.log("Amazon Buy Now:", hasBuyNow);
   console.log("Amazon Add To Cart:", hasAddToCart);
   console.log("Amazon Unavailable:", unavailable);
-      // Amazon normal stock check only
+  if (!inStock) {
+    price = product.price;
+  }
     }
 
     console.log("Detected In Stock:", inStock);
@@ -221,6 +307,14 @@ console.log("Unicorn Price:", price);
     return {
       inStock,
       price,
+      availablePincodes: appleResult?.availablePincodes || [],
+      unavailablePincodes: appleResult?.unavailablePincodes || [],
+      storeMessage: appleResult?.storeMessage || null,
+      partNumber: appleResult?.partNumber || null,
+      storeDetails: appleResult?.storeDetails || [],
+      //pincodeUsed: appleResult ? APPLE_PINCODE : null,
+      pincodeUsed: appleResult?.availablePincodes?.length ? "multiple" : null,
+      lastAppleQuote: appleResult?.lastAppleQuote ?? product.lastAppleQuote,
     };
   } catch (error) {
     if (browser) {
