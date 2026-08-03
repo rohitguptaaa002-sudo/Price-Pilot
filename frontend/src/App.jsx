@@ -4,7 +4,7 @@ import Swal from "sweetalert2";
 import "./App.css";
 
 
-const API_URL = "https://price-pilot-ltx1-gp7sxc35u-stock-d0ef.vercel.app";
+const API_URL = "https://price-pilot-ltx1.vercel.app";
 
 function App(){
   const [name, setName] = useState("");
