@@ -26,7 +26,7 @@ function ResetPassword() {
 
     try {
       await axios.post(
-        "http://localhost:3000/api/auth/reset-password",
+        `${API_URL}/api/auth/reset-password`,
         {
           email,
           otp: form.otp,

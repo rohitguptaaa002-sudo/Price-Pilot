@@ -31,7 +31,7 @@ function VerifyOTP() {
     setLoading(true);
 
     try {
-      await axios.post("http://localhost:3000/api/auth/verify-otp", {
+      await axios.post(`${API_URL}/api/auth/verify-otp`, {
         email,
         otp,
       });
@@ -57,7 +57,7 @@ function VerifyOTP() {
 
   const handleResendOTP = async () => {
     try {
-      await axios.post("http://localhost:3000/api/auth/resend-otp", {
+      await axios.post("API_URL/api/auth/resend-otp", {
         email,
       });
 
