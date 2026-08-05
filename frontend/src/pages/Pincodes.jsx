@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
-
-const API_URL = "API_URL";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 function Pincodes() {
   const [pincode, setPincode] = useState("");
