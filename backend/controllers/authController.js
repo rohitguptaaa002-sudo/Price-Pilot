@@ -7,6 +7,7 @@ const sendOTPEmail = require("../Services/sendOTPEmail");
 // SIGNUP
 const signup = async (req, res) => {
   try {
+    console.log('POST /api/auth/signup', { body: req.body });
     const { name, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
@@ -40,6 +41,7 @@ const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
       email: user.email,
     });
   } catch (error) {
+    console.error('Signup ERROR:', error);
     res.status(500).json({
       success: false,
       message: error.message,
