@@ -1,5 +1,4 @@
-const puppeteer = require("puppeteer");
-//const chromium = require("@sparticuz/chromium");
+const { chromium } = require("playwright");
 // old const checkAppleStore = require("./checkApplestore");
 const checkAppleAvailability = require("./checkAppleAvailability");
 const Pincode = require("../models/Pincode");
@@ -18,10 +17,10 @@ const checkStock = async (product) => {
 
     console.log("2. Before browser launch");
 
-browser = await puppeteer.launch({
-  headless: true,
-  args: ["--no-sandbox", "--disable-setuid-sandbox"],
-});
+    const browser = await chromium.launch({
+      headless: true
+    });
+
     console.log("3. Browser launched");
 
     const page = await browser.newPage();
@@ -34,39 +33,39 @@ browser = await puppeteer.launch({
 
     console.log("5. Before page.goto:", product.url);
     page.setDefaultNavigationTimeout(30000);
-console.log("opening", product.url);
+    console.log("opening", product.url);
 
-await page.goto(product.url, {
-  waitUntil: "domcontentloaded",
-  timeout: 45000,
-}).catch(e => console.log("Goto Error:", e.message));
+    await page.goto(product.url, {
+      waitUntil: "domcontentloaded",
+      timeout: 45000,
+    }).catch(e => console.log("Goto Error:", e.message));
 
-console.log("After goto");
+    console.log("After goto");
 
     console.log("6. Page loaded");
     console.log(await page.title());
-await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
     console.log("7. Body Loaded");
 
-   const hostname = new URL(product.url).hostname;
+    const hostname = new URL(product.url).hostname;
 
-console.log("Hostname:", hostname);
-const title = await page.title();
+    console.log("Hostname:", hostname);
+    const title = await page.title();
 
-const lowerHtml = await page.evaluate(() =>
-  document.body.innerText.toLowerCase()
-);
+    const lowerHtml = await page.evaluate(() =>
+      document.body.innerText.toLowerCase()
+    );
 
 
-console.log(`Checking: ${product.name}`);
+    console.log(`Checking: ${product.name}`);
 
-if (hostname.includes("amazon")) {
-  console.log("Amazon detected");
-  await page.waitForSelector("body", { timeout: 10000 });
-  console.log("Amazon body loaded");
-}
+    if (hostname.includes("amazon")) {
+      console.log("Amazon detected");
+      await page.waitForSelector("body", { timeout: 10000 });
+      console.log("Amazon body loaded");
+    }
 
-await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     if (product.name === "Iphone 17 256") {
       await page.screenshot({
         path: "unicorn.png",
@@ -76,150 +75,150 @@ await new Promise(resolve => setTimeout(resolve, 2000));
 
     console.log(`Checking: ${product.name}`);
 
-let price = product.price;
+    let price = product.price;
 
-try {
-  if (hostname.includes("flipkart")) {
+    try {
+      if (hostname.includes("flipkart")) {
 
-    console.log("Before Flipkart $$eval");
+        console.log("Before Flipkart $$eval");
 
-const txt = await page.$eval(
-  "div.v1zwn21l.v1zwn20._1psv1zeb9._1psv1ze0",
-  el => el.innerText.trim()
-).catch(() => null);
+        const txt = await page.$eval(
+          "div.v1zwn21l.v1zwn20._1psv1zeb9._1psv1ze0",
+          el => el.innerText.trim()
+        ).catch(() => null);
 
-console.log("Price Text:", txt);
+        console.log("Price Text:", txt);
 
-if (txt) {
-  price = Number(txt.replace(/[₹,]/g, ""));
-}
+        if (txt) {
+          price = Number(txt.replace(/[₹,]/g, ""));
+        }
 
-console.log("Flipkart Price:", price);
-  }
-
- else if (hostname.includes("amazon")) {
-    // JSON-LD (schema.org Product data) Amazon khud embed karta hai — ye
-    // hamesha SAHI product ka price deta hai, kabhi sponsored/related item
-    // ka nahi. Isliye pehle isi ko try karo, phir DOM selectors fallback me.
-    const jsonLdPrice = await page.evaluate(() => {
-      const scripts = document.querySelectorAll('script[type="application/ld+json"]');
-      for (const script of scripts) {
-        try {
-          const data = JSON.parse(script.textContent);
-          const items = Array.isArray(data) ? data : [data];
-          for (const item of items) {
-            if (item.offers) {
-              const offer = Array.isArray(item.offers) ? item.offers[0] : item.offers;
-              if (offer && offer.price) return Number(offer.price);
-            }
-          }
-        } catch (e) {}
+        console.log("Flipkart Price:", price);
       }
-      return null;
-    });
 
-    console.log("Amazon JSON-LD Price:", jsonLdPrice);
+      else if (hostname.includes("amazon")) {
+        // JSON-LD (schema.org Product data) Amazon khud embed karta hai — ye
+        // hamesha SAHI product ka price deta hai, kabhi sponsored/related item
+        // ka nahi. Isliye pehle isi ko try karo, phir DOM selectors fallback me.
+        const jsonLdPrice = await page.evaluate(() => {
+          const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+          for (const script of scripts) {
+            try {
+              const data = JSON.parse(script.textContent);
+              const items = Array.isArray(data) ? data : [data];
+              for (const item of items) {
+                if (item.offers) {
+                  const offer = Array.isArray(item.offers) ? item.offers[0] : item.offers;
+                  if (offer && offer.price) return Number(offer.price);
+                }
+              }
+            } catch (e) { }
+          }
+          return null;
+        });
 
-    if (jsonLdPrice && jsonLdPrice > 100) {
-      price = jsonLdPrice;
-    } else {
-      
-      const amazonPriceSelectors = [
-        "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
-        "#corePrice_feature_div .a-price .a-offscreen",
-        "#apex_desktop .a-price .a-offscreen",
-        "#priceblock_ourprice",
-        "#priceblock_dealprice",
-        ".a-price .a-offscreen",
-      ];
+        console.log("Amazon JSON-LD Price:", jsonLdPrice);
 
-      const whole = await page.evaluate((selectors) => {
-        for (const sel of selectors) {
-          const el = document.querySelector(sel);
-          if (el && el.innerText && el.innerText.trim()) {
-            return el.innerText.trim();
+        if (jsonLdPrice && jsonLdPrice > 100) {
+          price = jsonLdPrice;
+        } else {
+
+          const amazonPriceSelectors = [
+            "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
+            "#corePrice_feature_div .a-price .a-offscreen",
+            "#apex_desktop .a-price .a-offscreen",
+            "#priceblock_ourprice",
+            "#priceblock_dealprice",
+            ".a-price .a-offscreen",
+          ];
+
+          const whole = await page.evaluate((selectors) => {
+            for (const sel of selectors) {
+              const el = document.querySelector(sel);
+              if (el && el.innerText && el.innerText.trim()) {
+                return el.innerText.trim();
+              }
+            }
+            return null;
+          }, amazonPriceSelectors);
+
+          console.log("Amazon Price Text (fallback):", whole);
+
+          if (whole) {
+            price = Number(whole.replace(/[₹,]/g, ""));
           }
         }
-        return null;
-      }, amazonPriceSelectors);
+      }
 
-      console.log("Amazon Price Text (fallback):", whole);
+      else if (hostname.includes("shop.unicornstore.in")) {
+        const txt = await page.$eval(
+          ".price-box .price.ml-2",
+          el => el.innerText
+        ).catch(() => null);
 
-      if (whole) {
-        price = Number(whole.replace(/[₹,]/g, ""));
+        console.log("Unicorn Price:", txt);
+
+        if (txt) {
+          price = parseFloat(txt.replace(/[^0-9.]/g, ""));
+        }
+        console.log("Unicorn Price:", price);
+        //console.log(await page.content());
+      }
+
+      else if (hostname.includes("croma")) {
+        const txt = await page.$eval(
+          ".amount",
+          el => el.innerText
+        ).catch(() => null);
+
+        if (txt) {
+          price = parseFloat(txt.replace(/[^0-9.]/g, ""));
+        }
+      }
+
+      console.log("Current Price:", price);
+
+    } catch (e) {
+      console.log(e);
+      console.log("Price Fetch Failed");
+    }
+    /*let appleResult = null;
+    if (hostname.includes("apple.in") || hostname.includes("apple.com")) {
+      console.log("Apple Store detected");
+      try {
+        // Pass pincode + target stores so we get real per-store availability
+        // (e.g. Apple Saket / Apple Noida) instead of a generic yes/no.
+        appleResult = await checkAppleStore({
+          url: product.url,
+          pincode: APPLE_PINCODE,
+          storeNames: APPLE_STORE_NAMES,
+        });
+        inStock = appleResult.inStock;
+        if (appleResult.price) {
+          price = appleResult.price;
+        }
+        console.log("Apple Store Result:", appleResult);
+      } catch (err) {
+        console.log("Apple Check Error inside stock script:", err.message);
       }
     }
-  }
-
-  else if (hostname.includes("shop.unicornstore.in")) {
-  const txt = await page.$eval(
-  ".price-box .price.ml-2",
-  el => el.innerText
-).catch(() => null);
-
-console.log("Unicorn Price:", txt);
-
-if (txt) {
-  price = parseFloat(txt.replace(/[^0-9.]/g, ""));
-}
-console.log("Unicorn Price:", price);
-//console.log(await page.content());
-  }
-
-  else if (hostname.includes("croma")) {
-    const txt = await page.$eval(
-      ".amount",
-      el => el.innerText
-    ).catch(() => null);
-
-    if (txt) {
-      price = parseFloat(txt.replace(/[^0-9.]/g, ""));
-    }
-  }
-
-  console.log("Current Price:", price);
-
-} catch (e) {
-  console.log(e);
-  console.log("Price Fetch Failed");
-}
-  /*let appleResult = null;
-  if (hostname.includes("apple.in") || hostname.includes("apple.com")) {
-    console.log("Apple Store detected");
-    try {
-      // Pass pincode + target stores so we get real per-store availability
-      // (e.g. Apple Saket / Apple Noida) instead of a generic yes/no.
-      appleResult = await checkAppleStore({
-        url: product.url,
-        pincode: APPLE_PINCODE,
-        storeNames: APPLE_STORE_NAMES,
-      });
-      inStock = appleResult.inStock;
-      if (appleResult.price) {
-        price = appleResult.price;
+    */
+    let appleResult = null;
+    if (hostname.includes("apple.in") || hostname.includes("apple.com")) {
+      console.log("Apple Store detected");
+      try {
+        // User ne jo bhi pincodes save kiye hain unn SABKE liye check karta hai
+        appleResult = await checkAppleAvailability(product);
+        inStock = appleResult.inStock;
+        if (appleResult.price) {
+          price = appleResult.price;
+        }
+        console.log("Apple Store Result:", appleResult);
+      } catch (err) {
+        console.log("Apple Check Error inside stock script:", err.message);
       }
-      console.log("Apple Store Result:", appleResult);
-    } catch (err) {
-      console.log("Apple Check Error inside stock script:", err.message);
+      await new Promise((r) => setTimeout(r, 15000));
     }
-  }
-  */
- let appleResult = null;
-if (hostname.includes("apple.in") || hostname.includes("apple.com")) {
-  console.log("Apple Store detected");
-  try {
-    // User ne jo bhi pincodes save kiye hain unn SABKE liye check karta hai
-    appleResult = await checkAppleAvailability(product);
-    inStock = appleResult.inStock;
-    if (appleResult.price) {
-      price = appleResult.price;
-    }
-    console.log("Apple Store Result:", appleResult);
-  } catch (err) {
-    console.log("Apple Check Error inside stock script:", err.message);
-  }
-  await new Promise((r) => setTimeout(r, 15000));
-}
 
     console.log("Website:", hostname);
     console.log("Page Title:", title);
@@ -269,35 +268,34 @@ if (hostname.includes("apple.in") || hostname.includes("apple.com")) {
 
       console.log("Has IN STOCK:", hasInStock);
       console.log("Has Notify Me:", hasNotifyMe);
-    } 
-        else if (hostname.includes("croma"))
-          {
-          const pageText = await page.evaluate(() =>
-          document.body.innerText.toLowerCase()
-        );
-        inStock = 
+    }
+    else if (hostname.includes("croma")) {
+      const pageText = await page.evaluate(() =>
+        document.body.innerText.toLowerCase()
+      );
+      inStock =
         !pageText.includes("out of stock") &&
         !pageText.includes("notify me") &&
         !pageText.includes("currently unavailable");
-        console.log("croma Stock:", inStock);
-  
-} else if (hostname.includes("amazon")) {
-  const pageText = await page.evaluate(() =>
-    document.body.innerText.toLowerCase()
-  );
+      console.log("croma Stock:", inStock);
 
-  const hasBuyNow = pageText.includes("buy now");
-  const hasAddToCart = pageText.includes("add to cart");
-  const unavailable = pageText.includes("currently unavailable");
+    } else if (hostname.includes("amazon")) {
+      const pageText = await page.evaluate(() =>
+        document.body.innerText.toLowerCase()
+      );
 
-  inStock = (hasBuyNow || hasAddToCart) && !unavailable;
+      const hasBuyNow = pageText.includes("buy now");
+      const hasAddToCart = pageText.includes("add to cart");
+      const unavailable = pageText.includes("currently unavailable");
 
-  console.log("Amazon Buy Now:", hasBuyNow);
-  console.log("Amazon Add To Cart:", hasAddToCart);
-  console.log("Amazon Unavailable:", unavailable);
-  if (!inStock) {
-    price = product.price;
-  }
+      inStock = (hasBuyNow || hasAddToCart) && !unavailable;
+
+      console.log("Amazon Buy Now:", hasBuyNow);
+      console.log("Amazon Add To Cart:", hasAddToCart);
+      console.log("Amazon Unavailable:", unavailable);
+      if (!inStock) {
+        price = product.price;
+      }
     }
 
     console.log("Detected In Stock:", inStock);
